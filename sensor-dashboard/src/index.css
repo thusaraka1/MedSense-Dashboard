@@ -1,0 +1,73 @@
+/* Medical Theme Design System */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  /* Color Palette - Medical & Clean */
+  --color-primary: #007AFF; /* Medical Blue */
+  --color-primary-light: #E1F0FF;
+  --color-success: #34C759; /* Vital Signs Normal */
+  --color-warning: #FF9F0A;
+  --color-danger: #FF3B30; /* Critical Alert */
+  --color-background: #F2F4F8; /* Clinical Light Gray Background */
+  --color-surface: #FFFFFF; /* White Cards */
+  --color-text-primary: #1C1C1E;
+  --color-text-secondary: #8E8E93;
+  --color-border: #E5E5EA;
+
+  /* Shadows - Soft & Premium */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
+
+  /* Spacing & Layout */
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--color-background);
+  color: var(--color-text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+/* Utility to make full height app */
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Animations */
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.8; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-pulse-slow {
+  animation: pulse 2s infinite ease-in-out;
+}
+
+.animate-pulse-fast {
+  animation: pulse 1s infinite ease-in-out;
+}
