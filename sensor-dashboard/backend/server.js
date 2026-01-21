@@ -47,34 +47,81 @@ function broadcast(data) {
     });
 }
 
-// Serial Port Configuration
-// CHANGE THIS to match your ESP32 COM port (Windows: COM3, COM4, etc.)
-const SERIAL_PORT = 'COM4'; // ← UPDATE THIS
 const BAUD_RATE = 115200;
+let port;
 
-console.log(`\nAttempting to connect to ESP32 on ${SERIAL_PORT}...`);
+async function startSerialConnection() {
+    try {
+        const ports = await SerialPort.list();
+        console.log('Available Ports:', ports.map(p => `${p.path} (${p.manufacturer || 'unknown'})`).join(', '));
 
-const port = new SerialPort({
-    path: SERIAL_PORT,
-    baudRate: BAUD_RATE,
-});
+        // Auto-detect strategy: Look for common ESP32/Arduino USB drivers
+        // CP210x (Silicon Labs), CH340 (wch.cn / Qinheng), FTDI
+        const espPort = ports.find(p =>
+            p.manufacturer && (
+                p.manufacturer.includes('Silicon') ||
+                p.manufacturer.includes('wch') ||
+                p.manufacturer.includes('Qinheng') ||
+                p.manufacturer.includes('Prolific') ||
+                p.manufacturer.includes('Arduino')
+            )
+        ) || ports[0]; // Fallback to first available port if no match
 
-const parser = port.pipe(new ReadlineParser({ delimiter: '\n' }));
+        if (!espPort) {
+            console.error('✗ No Serial Ports found! Connect your ESP32 via USB.');
+            setTimeout(startSerialConnection, 5000); // Retry in 5s
+            return;
+        }
 
-port.on('open', () => {
-    console.log(`✓ Serial Port ${SERIAL_PORT} opened successfully\n`);
-    console.log('Waiting for sensor data...\n');
-});
+        console.log(`\nAttempting to connect to auto-detected port: ${espPort.path}...`);
 
-port.on('error', (err) => {
-    console.error(`✗ Serial Port Error: ${err.message}`);
-    console.log('\nTroubleshooting:');
-    console.log('1. Check if ESP32 is connected via USB');
-    console.log('2. Update SERIAL_PORT in server.js (currently: ' + SERIAL_PORT + ')');
-    console.log('3. Close Arduino IDE Serial Monitor if open\n');
-});
+        port = new SerialPort({
+            path: espPort.path,
+            baudRate: BAUD_RATE,
+            autoOpen: false
+        });
 
-parser.on('data', (line) => {
+        const parser = port.pipe(new ReadlineParser({ delimiter: '\n' }));
+
+        port.open((err) => {
+            if (err) {
+                console.error(`✗ Failed to open ${espPort.path}: ${err.message}`);
+                console.log('  (Retrying in 5 seconds...)');
+                setTimeout(startSerialConnection, 5000);
+            }
+        });
+
+        port.on('open', () => {
+            console.log(`✓ Serial Port ${espPort.path} opened successfully\n`);
+            console.log('Waiting for sensor data...\n');
+        });
+
+        port.on('close', () => {
+            console.log('! Serial Port Disconnected. Reconnecting...');
+            setTimeout(startSerialConnection, 3000);
+        });
+
+        port.on('error', (err) => {
+            console.error(`✗ Serial Port Error: ${err.message}`);
+        });
+
+        // Data Handler
+        parser.on('data', (line) => {
+            // ... existing data logic ...
+            handleData(line);
+        });
+
+    } catch (error) {
+        console.error('Error listing ports:', error);
+        setTimeout(startSerialConnection, 5000);
+    }
+}
+
+// Start the connection process
+startSerialConnection();
+
+
+function handleData(line) {
     try {
         // Only parse JSON lines
         if (line.trim().startsWith('{') && line.trim().endsWith('}')) {
@@ -90,13 +137,15 @@ parser.on('data', (line) => {
             }
         }
     } catch (e) {
-        // Ignore parse errors (non-JSON lines from ESP32)
+        // Ignore parse errors
     }
-});
+}
 
 // Graceful shutdown
 process.on('SIGINT', () => {
     console.log('\nShutting down...');
-    port.close();
+    if (port && port.isOpen) {
+        port.close();
+    }
     process.exit(0);
 });

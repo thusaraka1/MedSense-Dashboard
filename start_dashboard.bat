@@ -5,11 +5,23 @@ echo ===================================================
 
 echo.
 echo [1/3] Starting Backend Server...
-start "MedSense Backend" cmd /k "cd sensor-dashboard/backend && npm start"
+cd sensor-dashboard/backend
+if not exist node_modules (
+    echo    - Installing Backend Dependencies...
+    call npm install
+)
+start "MedSense Backend" cmd /k "npm start"
+cd ../..
 
 echo.
 echo [2/3] Starting Frontend Dashboard...
-start "MedSense Frontend" cmd /k "cd sensor-dashboard && npm run dev -- --host"
+cd sensor-dashboard
+if not exist node_modules (
+    echo    - Installing Frontend Dependencies...
+    call npm install
+)
+start "MedSense Frontend" cmd /k "npm run dev -- --host"
+cd ..
 
 echo.
 echo [3/3] Opening Dashboard in Browser...
